@@ -4,7 +4,7 @@
 # Copyright 2017 - Joshua Porrata
 # Not for business use without an inexpensive license, contact 
 # Localbeautytampabay@gmail.com for questions about a lisence 
-# there is no warranty, this might destroy everything it touches. 
+# there is no warranty, This might destroy everything it touches. 
 
 Class OrganizePhotos {
     [string]$OriginPath;
@@ -14,9 +14,9 @@ Class OrganizePhotos {
     [string]$FileName;
     [string]$FileType;
     [string]$SourcePath;
-    [string]$createdDate;
+    [string]$CreatedDate;
     [string]$CreatedTargetPath;
-    [string]$modifiedDate;
+    [string]$ModifiedDate;
     [string]$ModifiedTargetPath;
     [string]$FileHash
 
@@ -61,7 +61,7 @@ Class OrganizePhotos {
             return $false;
         }
     }
-    [array] getObjectsFlat () {
+    [array] GetObjectsFlat () {
         if ($This.OriginPath.Equals("Default")) {
             Throw "The SourceRootDirectory Is set to default";
         }
@@ -71,7 +71,7 @@ Class OrganizePhotos {
             return $This.PathsList;
         }
     }
-    [array] getObjectsRecurse () {
+    [array] GetObjectsRecurse () {
         if ($This.OriginPath.Equals("Default")) {
             Throw "The SourceRootDirectory Is set to default";
         }
@@ -82,17 +82,17 @@ Class OrganizePhotos {
         }
     }
     [hashtable] CollectObjectInfo ([string]$SourcePath) {
-        $temp = Get-ChildItem -File -Path $SourcePath -ErrorAction SilentlyContinue;
-        $This.fileName = $temp.Name;
-        $This.filetype = $temp.Extension;
-        $This.SourcePath = $temp.FullName;
-        $This.createdDate = $temp.CreationTime.ToShortDateString();
-        $This.createdDate = $This.createdDate.Replace("/", "-");
-        $This.CreatedTargetPath = Join-Path -Path $This.DestPath -ChildPath $This.createdDate;
-        $This.modifiedDate = $temp.LastWriteTime.ToShortDateString();
-        $This.modifiedDate = $This.modifiedDate.Replace("/", "-");
-        $This.ModifiedTargetPath = Join-Path -Path $This.DestPath -ChildPath $This.modifiedDate;
-        $This.objectHolder = [ordered] @{
+        $Temp = Get-ChildItem -File -Path $SourcePath -ErrorAction SilentlyContinue;
+        $This.FileName = $Temp.Name;
+        $This.FileType = $Temp.Extension;
+        $This.SourcePath = $Temp.FullName;
+        $This.CreatedDate = $Temp.CreationTime.ToShortDateString();
+        $This.CreatedDate = $This.CreatedDate.Replace("/", "-");
+        $This.CreatedTargetPath = Join-Path -Path $This.DestPath -ChildPath $This.CreatedDate;
+        $This.ModifiedDate = $Temp.LastWriteTime.ToShortDateString();
+        $This.ModifiedDate = $This.ModifiedDate.Replace("/", "-");
+        $This.ModifiedTargetPath = Join-Path -Path $This.DestPath -ChildPath $This.ModifiedDate;
+        $This.ObjectHolder = [ordered] @{
             "FileName"           = $This.FileName;
             "FileType"           = $This.FileType;
             "SourcePath"         = $This.SourcePath;
@@ -143,220 +143,220 @@ Class OrganizePhotos {
         
     }
     [void] ShowDates() {
-        $filenames = $This.getObjectsFlat();
+        $FileNames = $This.getObjectsFlat();
         $simObject = @();
-        foreach ($filename in $filenames) {
-            $looper = $This.CollectObjectInfo($filename);
-            $row = New-Object PSObject
-            $row | Add-Member -MemberType NoteProperty -Name "FileName" -Value $looper.FileName;
-            $row | Add-Member -MemberType NoteProperty -Name "FileType" -Value $looper.FileType;
-            $row | Add-Member -MemberType NoteProperty -Name "CreatedDate" -Value $looper.CreatedDate;
-            $row | Add-Member -MemberType NoteProperty -Name "ModifiedDate" -Value $looper.ModifiedDate;
-            $simObject += $row;
+        foreach ($FileName in $FileNames) {
+            $looper = $This.CollectObjectInfo($FileName);
+            $Row = New-Object PSObject
+            $Row | Add-Member -MemberType NoteProperty -Name "FileName" -Value $looper.FileName;
+            $Row | Add-Member -MemberType NoteProperty -Name "FileType" -Value $looper.FileType;
+            $Row | Add-Member -MemberType NoteProperty -Name "CreatedDate" -Value $looper.CreatedDate;
+            $Row | Add-Member -MemberType NoteProperty -Name "ModifiedDate" -Value $looper.ModifiedDate;
+            $simObject += $Row;
         }
         $simObject | Export-Csv -Path test.csv -NoTypeInformation -Encoding UTF8
     }
 }
 
-class myInterface {
-    [string]$sourceDirectory;
-    [string]$destinationRoot;
-    [string]$moveCopy;
-    [string]$dateType;
-    hidden [boolean]$run;
+class MyInterface {
+    [string]$SourceDirectory;
+    [string]$DestinationRoot;
+    [string]$MoveCopy;
+    [string]$DateType;
+    hidden [boolean]$RUN;
 
-    myInterface() {
-        [String]$This.sourceDirectory = "Default";
-        [String]$This.destinationRoot = "Default";
-        [String]$This.moveCopy = "Default";
-        [Boolean]$This.run = $true;
-        [string]$This.dateType = "Default";
+    MyInterface() {
+        [String]$This.SourceDirectory = "Default";
+        [String]$This.DestinationRoot = "Default";
+        [String]$This.MoveCopy = "Default";
+        [Boolean]$This.RUN = $true;
+        [string]$This.DateType = "Default";
     }
 
-    [void] print ([string]$color, [string]$text) {
+    [void] Print ([string]$color, [string]$Text) {
         if ($color.Equals("")) {
-            Write-Host $text -ForegroundColor White
+            Write-Host $Text -ForegroundColor White
         }
         else {
-            Write-Host $text -ForegroundColor $color
+            Write-Host $Text -ForegroundColor $color
         }
         
     }
     
-    [void] displayStatus () {
+    [void] DisplayStatus () {
         Clear-Host
-        $This.print("green", "********************************************************************************`n");
-        if ($This.sourceDirectory.Equals("Default")) {
-            $This.print("red", "You must select a source directory.")
+        $This.Print("green", '*'*80);
+        if ($This.SourceDirectory.Equals("Default")) {
+            $This.Print("red", "`n" + "You must select a source directory.")
         }
         else {
-            $This.print("green", "The Current source directory is: " + $This.sourceDirectory);
+            $This.Print("green", "`n" +"The Current source directory is: " + $This.SourceDirectory);
         }
-        if ($This.destinationRoot.Equals("Default")) {
-            $This.print("red", "You must select a destination directory.")
-        }
-        else {
-            $This.print("green", "The Current destination directory is: " + $This.destinationRoot);
-        }
-        if ($This.dateType.Equals("Default")) {
-            $This.print("red", "You must select an organization parameter(by Creation or Modified date).")
+        if ($This.DestinationRoot.Equals("Default")) {
+            $This.Print("red", "You must select a destination directory.")
         }
         else {
-            $This.print("green", "Files will be organized by: " + $This.dateType);
+            $This.Print("green", "The Current destination directory is: " + $This.DestinationRoot);
         }
-        if ($This.moveCopy.Equals("Default")) {
-            $This.print("red", "You must select whether the files will be moved or copied.")
+        if ($This.DateType.Equals("Default")) {
+            $This.Print("red", "You must select an organization parameter(by Creation or Modified date).")
         }
         else {
-            $This.print("green", "Files will be: " + $This.moveCopy);
+            $This.Print("green", "Files will be organized by: " + $This.DateType);
         }
-        $This.print("green", "`n********************************************************************************");
+        if ($This.MoveCopy.Equals("Default")) {
+            $This.Print("red", "You must select whether the files will be moved or copied." + "`n")
+        }
+        else {
+            $This.Print("green", "Files will be: " + $This.MoveCopy + "`n");
+        }
+        $This.Print("green", '*' * 80);
 
     }
-    
-    [void] showMenu () {
-        $This.print("", "")
-        $This.print("", "******************************************")
-        $This.print("", "MAKE A SELECTION BELOW")
-        $This.print("", "******************************************")
-        $This.print("", "1. Select a source directory")
-        $This.print("", "2. Select a destination directory")
-        $This.print("", "3. Select creation date or last modified date")
-        $This.print("", "4. Select whether to move or copy the files")
-        $This.print("", "5. Show dates of files (Recommended before proceeding)")
-        $This.print("", "6. Run script")
-        $This.print("", "7. Quit")
-        $This.print("", "******************************************`n")
+
+    [void] ShowMenu () {
+        $This.Print("", "")
+        $This.Print("", "*"*55)
+        $This.Print("", "Make a selection below")
+        $This.Print("", "*"*55)
+        $This.Print("", "1. Select a source directory")
+        $This.Print("", "2. Select a destination directory")
+        $This.Print("", "3. Select creation date or last modified date")
+        $This.Print("", "4. Select whether to move or copy the files")
+        $This.Print("", "5. Show dates of files (Recommended before proceeding)")
+        $This.Print("", "6. Run script")
+        $This.Print("", "7. Quit")
+        $This.Print("", "*"*55)
     }
 
     [void] Main() {
         [OrganizePhotos] $OrganizePhotos = [OrganizePhotos]::New();
-        while ($This.run) {
+        while ($This.RUN) {
             $This.displayStatus();
             $This.showMenu();
             $command = read-host "Make a Selection: "
             if ($command.Equals("7")) {
-                $This.run = $false;
+                $This.RUN = $false;
             }
             elseif ($command.Equals("1")) {
-                $This.print("", "Enter the full path to the directory from which you would like to copy or move files: ");
-                $This.sourceDirectory = Read-Host;
-                if ($OrganizePhotos.SetSourcePath($This.sourceDirectory)) {
-                    $This.print("green", "source Folder Set Successfully");
+                $This.Print("", "Enter the full path to the directory from which you would like to copy or move files: ");
+                $This.SourceDirectory = Read-Host;
+                if ($OrganizePhotos.SetSourcePath($This.SourceDirectory)) {
+                    $This.Print("green", "source Folder Set Successfully");
                 }
                 else {
-                    $This.print("red", "The Source Folder is Invalid");
+                    $This.Print("red", "The Source Folder is Invalid");
                     $This.Print("", "Press enter to return to the main menu");
                     Read-Host
-                    $This.sourceDirectory = "Default";
+                    $This.SourceDirectory = "Default";
                 }  
             }
             elseif ($command.Equals("2")) {
-                $This.print("", "Enter the full path to the root of the directory files should be moved to: ");
-                $This.destinationRoot = Read-Host;
-                if ($OrganizePhotos.SetDestinationPath($This.destinationRoot)) {
-                    $This.print("green", "Destination Folder Set Successfully")
+                $This.Print("", "Enter the full path to the root of the directory files should be moved to: ");
+                $This.DestinationRoot = Read-Host;
+                if ($OrganizePhotos.SetDestinationPath($This.DestinationRoot)) {
+                    $This.Print("green", "Destination Folder Set Successfully")
                 }
                 else {
-                    $This.print("red", "The destination Folder is Invalid");
+                    $This.Print("red", "The destination Folder is Invalid");
                     $This.Print("", "Press enter to return to the main menu");
                     Read-Host
-                    $This.destinationRoot = "Default";
+                    $This.DestinationRoot = "Default";
                 }  
             }
             elseif ($command.Equals("3")) {
-                $This.print("", "Enter 1 to organize by creation date and 2 to organize by last modified date.");
-                $selection = Read-Host;
-                if ($selection.Equals("1")) {
-                    $This.dateType = "creation";
+                $This.Print("", "Enter 1 to organize by creation date and 2 to organize by last modified date.");
+                $Selection = Read-Host;
+                if ($Selection.Equals("1")) {
+                    $This.DateType = "creation";
                 }
-                elseif ($selection.Equals("2")) {
-                    $This.dateType = "modified";
+                elseif ($Selection.Equals("2")) {
+                    $This.DateType = "modified";
                 }
                 else {
-                    $This.print("Red", "You entered $selection which is an invalid selection");
+                    $This.Print("Red", "You entered $Selection which is an invalid Selection");
                     $This.Print("", "Press enter to return to the main menu");
                     Read-Host
-                    $This.dateType = "Default";
+                    $This.DateType = "Default";
                 }
             }
             elseif ($command.Equals("4")) {
-                $This.print("", "Enter 1 to COPY files and 2 To MOVE files")
-                $selection = Read-Host;
-                if ($selection.Equals("1")) {
-                    $This.moveCopy = "copy";
+                $This.Print("", "Enter 1 to COPY files and 2 To MOVE files")
+                $Selection = Read-Host;
+                if ($Selection.Equals("1")) {
+                    $This.MoveCopy = "copy";
                 }
-                elseif ($selection.Equals("2")) {
-                    $This.moveCopy = "move";
+                elseif ($Selection.Equals("2")) {
+                    $This.MoveCopy = "move";
                 }
                 else {
-                    $This.print("Red", "You entered $selection which is an invalid selection");
+                    $This.Print("Red", "You entered $Selection which is an invalid Selection");
                     $This.Print("", "Press enter to return to the main menu");
                     Read-Host
-                    $This.moveCopy = "Default";
+                    $This.MoveCopy = "Default";
                 }
             }
             elseif ($command.Equals("5")) {
-                $OrganizePhotos.showDates();
-                $This.print("", "Please Check Test.csv in the same folder where this script was run before proceeding");
-                $This.print("", "Press Enter to the returned to the main Menu")
+                $OrganizePhotos.ShowDates();
+                $This.Print("", "Please Check Test.csv in the same folder where This script was RUN before proceeding");
+                $This.Print("", "Press Enter to the returned to the main Menu")
                 Read-Host
             }
             elseif ($command.Equals("6")) {
-                if ($This.moveCopy.Equals("Default") -or $This.destinationRoot.Equals("Default") -or $this.moveCopy.Equals("Default") -or $This.sourceDirectory.Equals("Default") ) {
-                    $This.print("red", "A required Paramaeter wasnot set, please try again.");
-                    $This.print("", "Press enter to return to the main menu");
+                if ($This.MoveCopy.Equals("Default") -or $This.DestinationRoot.Equals("Default") -or $This.MoveCopy.Equals("Default") -or $This.SourceDirectory.Equals("Default") ) {
+                    $This.Print("red", "A required Paramaeter wasnot set, please try again.");
+                    $This.Print("", "Press enter to return to the main menu");
                     Read-Host
                 }
                 else {
-                    if ($This.moveCopy.Equals("copy")) {
-                        if ($This.dateType.Equals("creation")) {
-                            $Filenames = $OrganizePhotos.getObjectsFlat();
-                            foreach ($file in $Filenames) {
+                    if ($This.MoveCopy.Equals("copy")) {
+                        if ($This.DateType.Equals("creation")) {
+                            $FileNames = $OrganizePhotos.getObjectsFlat();
+                            foreach ($file in $FileNames) {
                                 $looper = $OrganizePhotos.CollectObjectInfo($file);
                                 $OrganizePhotos.CopyFile($looper.SourcePath, $looper.CreatedTargetPath);
                             }
-                            $This.print("", "The Script Was Run. Please check the destination folder")
-                            $This.print("", "press enter to return to the main menu...")
+                            $This.Print("", "The Script Was RUN. Please check the destination folder")
+                            $This.Print("", "press enter to return to the main menu...")
                             Read-Host
                         }
-                        elseif ($This.dateType.Equals("modified")) {
-                            $Filenames = $OrganizePhotos.getObjectsFlat();
-                            foreach ($file in $Filenames) {
+                        elseif ($This.DateType.Equals("modified")) {
+                            $FileNames = $OrganizePhotos.getObjectsFlat();
+                            foreach ($file in $FileNames) {
                                 $looper = $OrganizePhotos.CollectObjectInfo($file);
                                 $OrganizePhotos.copyFile($looper.SourcePath, $looper.ModifiedTargetPath);
                             }
-                            $This.print("", "The Script Was Run. Please check the destination folder")
-                            $This.print("", "press enter to return to the main menu...")
+                            $This.Print("", "The Script Was RUN. Please check the destination folder")
+                            $This.Print("", "press enter to return to the main menu...")
                             Read-Host
                         }
                     }
-                    elseif ($This.moveCopy.Equals("move")) {
-                        if ($This.dateType.Equals("creation")) {
-                            $Filenames = $OrganizePhotos.getObjectsFlat();
-                            foreach ($file in $Filenames) {
+                    elseif ($This.MoveCopy.Equals("move")) {
+                        if ($This.DateType.Equals("creation")) {
+                            $FileNames = $OrganizePhotos.getObjectsFlat();
+                            foreach ($file in $FileNames) {
                                 $looper = $OrganizePhotos.CollectObjectInfo($file);
                                 $OrganizePhotos.MoveFile($looper.SourcePath, $looper.CreatedTargetPath);
                             }
-                            $This.print("", "The Script Was Run. Please check the destination folder")
-                            $This.print("", "press enter to return to the main menu...")
+                            $This.Print("", "The Script Was RUN. Please check the destination folder")
+                            $This.Print("", "press enter to return to the main menu...")
                             Read-Host
                         }
-                        elseif ($This.dateType.Equals("modified")) {
-                            $Filenames = $OrganizePhotos.getObjectsFlat();
-                            foreach ($file in $Filenames) {
+                        elseif ($This.DateType.Equals("modified")) {
+                            $FileNames = $OrganizePhotos.getObjectsFlat();
+                            foreach ($file in $FileNames) {
                                 $looper = $OrganizePhotos.CollectObjectInfo($file);
                                 $OrganizePhotos.MoveFile($looper.SourcePath, $looper.ModifiedTargetPath);
                             }
-                            $This.print("", "The Script Was Run. Please check the destination folder")
-                            $This.print("", "press enter to return to the main menu...")
+                            $This.Print("", "The Script Was RUN. Please check the destination folder")
+                            $This.Print("", "press enter to return to the main menu...")
                             Read-Host
                         }
                     }
                 }
             }
             else {
-                $This.run = $true;
+                $This.RUN = $true;
             }
                 
         }
