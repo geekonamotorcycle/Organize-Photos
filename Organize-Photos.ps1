@@ -3,7 +3,7 @@
 # Designed for powershell 5.1
 # Copyright 2017 - Joshua Porrata
 # Not for business use without an inexpensive license, contact 
-# Localbeautytampabay@gmail.com for questions about a lisence 
+# Localbeautytampabay@gmail.com for questions about a license 
 # there is no warranty, This might destroy everything it touches. 
 
 Class OrganizePhotos {
