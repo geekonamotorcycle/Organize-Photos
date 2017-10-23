@@ -1,3 +1,11 @@
+# Organize-Photos.ps1 
+# Version 0.5
+# Designed for powershell 5.1
+# Copyright 2017 - Joshua Porrata
+# Not for business use without an inexpensive license, contact 
+# Localbeautytampabay@gmail.com for questions about a lisence 
+# there is no warranty, This might destroy everything it touches. 
+
 Class OrganizePhotos {
     [string]$OriginPath;
     [string]$DestPath;
@@ -6,9 +14,9 @@ Class OrganizePhotos {
     [string]$FileName;
     [string]$FileType;
     [string]$SourcePath;
-    [string]$createdDate;
+    [string]$CreatedDate;
     [string]$CreatedTargetPath;
-    [string]$modifiedDate;
+    [string]$ModifiedDate;
     [string]$ModifiedTargetPath;
     [string]$FileHash
 
@@ -53,7 +61,7 @@ Class OrganizePhotos {
             return $false;
         }
     }
-    [array] getObjectsFlat () {
+    [array] GetObjectsFlat () {
         if ($This.OriginPath.Equals("Default")) {
             Throw "The SourceRootDirectory Is set to default";
         }
@@ -63,7 +71,7 @@ Class OrganizePhotos {
             return $This.PathsList;
         }
     }
-    [array] getObjectsRecurse () {
+    [array] GetObjectsRecurse () {
         if ($This.OriginPath.Equals("Default")) {
             Throw "The SourceRootDirectory Is set to default";
         }
@@ -74,17 +82,17 @@ Class OrganizePhotos {
         }
     }
     [hashtable] CollectObjectInfo ([string]$SourcePath) {
-        $temp = Get-ChildItem -File -Path $SourcePath -ErrorAction SilentlyContinue;
-        $This.fileName = $temp.Name;
-        $This.filetype = $temp.Extension;
-        $This.SourcePath = $temp.FullName;
-        $This.createdDate = $temp.CreationTime.ToShortDateString();
-        $This.createdDate = $This.createdDate.Replace("/", "-");
-        $This.CreatedTargetPath = Join-Path -Path $This.DestPath -ChildPath $This.createdDate;
-        $This.modifiedDate = $temp.LastWriteTime.ToShortDateString();
-        $This.modifiedDate = $This.modifiedDate.Replace("/", "-");
-        $This.ModifiedTargetPath = Join-Path -Path $This.DestPath -ChildPath $This.modifiedDate;
-        $This.objectHolder = [ordered] @{
+        $Temp = Get-ChildItem -File -Path $SourcePath -ErrorAction SilentlyContinue;
+        $This.FileName = $Temp.Name;
+        $This.FileType = $Temp.Extension;
+        $This.SourcePath = $Temp.FullName;
+        $This.CreatedDate = $Temp.CreationTime.ToString("MM-dd-yyyy");
+        #$This.CreatedDate = $This.CreatedDate.Replace("/", "-");
+        $This.CreatedTargetPath = Join-Path -Path $This.DestPath -ChildPath $This.CreatedDate;
+        $This.ModifiedDate = $Temp.LastWriteTime.ToString("MM-dd-yyyy");
+        #$This.ModifiedDate = $This.ModifiedDate.Replace("/", "-");
+        $This.ModifiedTargetPath = Join-Path -Path $This.DestPath -ChildPath $This.ModifiedDate;
+        $This.ObjectHolder = [ordered] @{
             "FileName"           = $This.FileName;
             "FileType"           = $This.FileType;
             "SourcePath"         = $This.SourcePath;
@@ -135,16 +143,16 @@ Class OrganizePhotos {
         
     }
     [void] ShowDates() {
-        $filenames = $This.getObjectsFlat();
+        $FileNames = $This.getObjectsFlat();
         $simObject = @();
-        foreach ($filename in $filenames) {
-            $looper = $This.CollectObjectInfo($filename);
-            $row = New-Object PSObject
-            $row | Add-Member -MemberType NoteProperty -Name "FileName" -Value $looper.FileName;
-            $row | Add-Member -MemberType NoteProperty -Name "FileType" -Value $looper.FileType;
-            $row | Add-Member -MemberType NoteProperty -Name "CreatedDate" -Value $looper.CreatedDate;
-            $row | Add-Member -MemberType NoteProperty -Name "ModifiedDate" -Value $looper.ModifiedDate;
-            $simObject += $row;
+        foreach ($FileName in $FileNames) {
+            $looper = $This.CollectObjectInfo($FileName);
+            $Row = New-Object PSObject
+            $Row | Add-Member -MemberType NoteProperty -Name "FileName" -Value $looper.FileName;
+            $Row | Add-Member -MemberType NoteProperty -Name "FileType" -Value $looper.FileType;
+            $Row | Add-Member -MemberType NoteProperty -Name "CreatedDate" -Value $looper.CreatedDate;
+            $Row | Add-Member -MemberType NoteProperty -Name "ModifiedDate" -Value $looper.ModifiedDate;
+            $simObject += $Row;
         }
         $simObject | Export-Csv -Path test.csv -NoTypeInformation -Encoding UTF8
     }
