@@ -86,11 +86,11 @@ Class OrganizePhotos {
         $This.FileName = $Temp.Name;
         $This.FileType = $Temp.Extension;
         $This.SourcePath = $Temp.FullName;
-        $This.CreatedDate = $Temp.CreationTime.ToShortDateString();
-        $This.CreatedDate = $This.CreatedDate.Replace("/", "-");
+        $This.CreatedDate = $Temp.CreationTime.ToString("MM-dd-yyyy");
+        #$This.CreatedDate = $This.CreatedDate.Replace("/", "-");
         $This.CreatedTargetPath = Join-Path -Path $This.DestPath -ChildPath $This.CreatedDate;
-        $This.ModifiedDate = $Temp.LastWriteTime.ToShortDateString();
-        $This.ModifiedDate = $This.ModifiedDate.Replace("/", "-");
+        $This.ModifiedDate = $Temp.LastWriteTime.ToString("MM-dd-yyyy");
+        #$This.ModifiedDate = $This.ModifiedDate.Replace("/", "-");
         $This.ModifiedTargetPath = Join-Path -Path $This.DestPath -ChildPath $This.ModifiedDate;
         $This.ObjectHolder = [ordered] @{
             "FileName"           = $This.FileName;
