@@ -1,3 +1,6 @@
+![Pretty Purple Flowers](https://farm5.staticflickr.com/4464/24015521458_9acd2d1e3f_k.jpg "Pretty Purple Flowers")
+
+
 # Organize-Photos
 ##  A script that will enumerate and organize photos based on Creation Date or Last Modified Date.
 
