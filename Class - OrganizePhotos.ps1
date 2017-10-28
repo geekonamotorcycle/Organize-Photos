@@ -1,5 +1,5 @@
-# Organize-Photos.ps1 
-# Version 0.5
+# Class - Organize-Photos.ps1 
+# Version 0.7
 # Designed for powershell 5.1
 # Copyright 2017 - Joshua Porrata
 # Not for business use without an inexpensive license, contact 
@@ -19,6 +19,7 @@ Class OrganizePhotos {
     [string]$ModifiedDate;
     [string]$ModifiedTargetPath;
     [string]$FileHash
+
 
     OrganizePhotos() {
         $This.OriginPath = "Default";
@@ -43,6 +44,7 @@ Class OrganizePhotos {
         $This.ModifiedTargetPath = "Default";
         $This.FileHash = "Default";
     }
+
     [Boolean] SetSourcePath ([string]$newSourcePath) {
         if (Test-Path -Path $newSourcePath) {
             $This.OriginPath = $newSourcePath;
@@ -52,6 +54,7 @@ Class OrganizePhotos {
             return $false
         }
     }
+
     [bool] SetDestinationPath ([string]$newDestinationPath) {
         if (Test-Path -Path $newDestinationPath) {
             $This.DestPath = $newDestinationPath;
@@ -61,6 +64,7 @@ Class OrganizePhotos {
             return $false;
         }
     }
+
     [array] GetObjectsFlat () {
         if ($This.OriginPath.Equals("Default")) {
             Throw "The SourceRootDirectory Is set to default";
@@ -71,6 +75,7 @@ Class OrganizePhotos {
             return $This.PathsList;
         }
     }
+
     [array] GetObjectsRecurse () {
         if ($This.OriginPath.Equals("Default")) {
             Throw "The SourceRootDirectory Is set to default";
@@ -81,6 +86,7 @@ Class OrganizePhotos {
             return $This.PathsList;
         }
     }
+
     [hashtable] CollectObjectInfo ([string]$SourcePath) {
         $Temp = Get-ChildItem -File -Path $SourcePath -ErrorAction SilentlyContinue;
         $This.FileName = $Temp.Name;
@@ -104,6 +110,7 @@ Class OrganizePhotos {
         }
         return $This.ObjectHolder;
     }
+
     [void] CopyFile ([string]$SourcePath, [string]$DestinationDirectory) {
         [string]$CompleteDest = Join-Path -Path $DestinationDirectory -ChildPath $This.FileName
         if (Test-Path -Path $DestinationDirectory) {
@@ -123,6 +130,7 @@ Class OrganizePhotos {
         }
         
     }
+
     [void] MoveFile ([string]$SourcePath, [string]$DestinationDirectory) {
         [string]$CompleteDest = Join-Path -Path $DestinationDirectory -ChildPath $This.FileName
         if (Test-Path -Path $DestinationDirectory) {
@@ -142,18 +150,22 @@ Class OrganizePhotos {
         }
         
     }
+    
     [void] ShowDates() {
-        $FileNames = $This.getObjectsFlat();
-        $simObject = @();
+        $FileNames = $This.GetObjectsFlat();
+        $SimObject = @();
         foreach ($FileName in $FileNames) {
-            $looper = $This.CollectObjectInfo($FileName);
+            $Looper = $This.CollectObjectInfo($FileName);
             $Row = New-Object PSObject
-            $Row | Add-Member -MemberType NoteProperty -Name "FileName" -Value $looper.FileName;
-            $Row | Add-Member -MemberType NoteProperty -Name "FileType" -Value $looper.FileType;
-            $Row | Add-Member -MemberType NoteProperty -Name "CreatedDate" -Value $looper.CreatedDate;
-            $Row | Add-Member -MemberType NoteProperty -Name "ModifiedDate" -Value $looper.ModifiedDate;
-            $simObject += $Row;
+            $Row | Add-Member -MemberType NoteProperty -Name "FileName" -Value $Looper.FileName;
+            $Row | Add-Member -MemberType NoteProperty -Name "FileType" -Value $Looper.FileType;
+            $Row | Add-Member -MemberType NoteProperty -Name "CreatedDate" -Value $Looper.CreatedDate;
+            $Row | Add-Member -MemberType NoteProperty -Name "ModifiedDate" -Value $Looper.ModifiedDate;
+            $SimObject += $Row;
         }
-        $simObject | Export-Csv -Path test.csv -NoTypeInformation -Encoding UTF8
+        $Date = [System.DateTime]::Now;
+        $Date = $Date.ToString("MM-dd-yyyy-HHmm");
+        $OutName = ($Date + "-Results.csv" );
+        $SimObject | Export-Csv -Path $OutName -NoTypeInformation -Encoding UTF8 
     }
 }
