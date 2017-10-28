@@ -20,6 +20,7 @@ Class OrganizePhotos {
     [string]$ModifiedTargetPath;
     [string]$FileHash
 
+
     OrganizePhotos() {
         $This.OriginPath = "Default";
         $This.DestPath = "Default";
@@ -154,7 +155,7 @@ Class OrganizePhotos {
             $Row | Add-Member -MemberType NoteProperty -Name "ModifiedDate" -Value $looper.ModifiedDate;
             $simObject += $Row;
         }
-        $simObject | Export-Csv -Path test.csv -NoTypeInformation -Encoding UTF8
+        $simObject | Export-Csv -Path test.csv -NoTypeInformation -Encoding UTF8 
     }
 }
 
@@ -164,6 +165,7 @@ class MyInterface {
     [string]$MoveCopy;
     [string]$DateType;
     hidden [boolean]$RUN;
+    [OrganizePhotos]$OrganizePhotos;
     $JsonImport;
     $Jsonerror;
 
@@ -173,9 +175,9 @@ class MyInterface {
         [String]$This.MoveCopy = "Default";
         [Boolean]$This.RUN = $true;
         [String]$This.DateType = "Default";
+        [OrganizePhotos]$This.OrganizePhotos = [OrganizePhotos]::new();
         $This.Jsonerror = "Default";
-        $This.Jsonerror;
-        
+        $This.Jsonerror;    
     }
 
     [void] Print ([string]$color, [string]$Text) {
@@ -184,10 +186,9 @@ class MyInterface {
         }
         else {
             Write-Host $Text -ForegroundColor $color
-        }
-        
+        }   
     }
-    
+
     [void] DisplayStatus () {
         Clear-Host
         $This.Print("green", '*' * 80);
@@ -216,7 +217,6 @@ class MyInterface {
             $This.Print("green", "Files will be: " + $This.MoveCopy + "`n");
         }
         $This.Print("green", '*' * 80);
-
     }
 
     [void] ShowMenu () {
@@ -235,204 +235,32 @@ class MyInterface {
         $This.Print("", "*" * 55)
     }
 
-
-    [void] Main() {
-        [OrganizePhotos] $OrganizePhotos = [OrganizePhotos]::New();
-
-        function SetSourceRoot () {
-            $This.Print("", "Enter the full path to the directory from which you would like to copy or move files: ");
-            $This.SourceDirectory = Read-Host
-            if ($OrganizePhotos.SetSourcePath($This.SourceDirectory)) {
-                $This.Print("green", "source Folder Set Successfully");
-            }
-            else {
-                $This.Print("red", "The Source Folder is Invalid");
-                $This.Print("", "Press enter to return to the main menu");
-                Read-Host
-                $This.SourceDirectory = "Default";
-            }
-        }
-        function SetDestRoot () {
-            $This.Print("", "Enter the full path to the root of the directory files should be moved to: ");
-            $This.DestinationRoot = Read-Host;
-            if ($OrganizePhotos.SetDestinationPath($This.DestinationRoot)) {
-                $This.Print("green", "Destination Folder Set Successfully")
-            }
-            else {
-                $This.Print("red", "The destination Folder is Invalid");
-                $This.Print("", "Press enter to return to the main menu");
-                Read-Host
-                $This.DestinationRoot = "Default";
-            }; 
-        }
-        function SelectSortType () {
-            $This.Print("", "Enter 1 to organize by creation date and 2 to organize by last modified date.");
-            $Selection = Read-Host;
-            Switch ($Selection) {
-                1 {
-                    $This.DateType = "creation";
-                };
-                2 {
-                    $This.DateType = "modified";
-                };
-                Default {
-                    $This.Print("Red", "You entered $Selection which is an invalid Selection");
-                    $This.Print("", "Press enter to return to the main menu");
-                    Read-Host
-                    $This.DateType = "Default";
-                };
-            };
-        }
-        function SelectCopyMove () {
-            $This.Print("", "Enter 1 to COPY files and 2 To MOVE files")
-            $Selection = Read-Host;
-            switch ($Selection) {
-                1 {
-                    $This.MoveCopy = "copy";
-                };
-                2 {
-                    $This.MoveCopy = "move"; 
-                };
-                default {
-                    $This.Print("Red", "You entered $Selection which is an invalid Selection");
-                    $This.Print("", "Press enter to return to the main menu");
-                    Read-Host;
-                    $This.MoveCopy = "Default";
-                };
-            };
-        }
-        function OutputSim () {
-            try {
-                $This.JsonImport = Get-Content -Path ./OP-Settings.json -ErrorVariable $This.Jsonerror;
-                $This.JsonImport = $This.JsonImport | ConvertFrom-Json -ErrorVariable $This.Jsonerror;
-                $OrganizePhotos.SetSourcePath($This.JsonImport.SourceRoot);
-                $This.SourceDirectory = $This.JsonImport.SourceRoot.ToString();
-                $OrganizePhotos.SetDestinationPath($This.JsonImport.DestRoot);
-                $This.DestinationRoot = $This.JsonImport.DestRoot.ToString();
-                $This.DateType = $This.JsonImport.CopyMove.ToString();
-                $This.MoveCopy = $This.JsonImport.CreationModified.ToString();
-
-            }
-            catch {
-                $This.Print("Red", "You caught the catch block");
-                $This.Jsonerror;
-                Read-Host;
-            }
-            finally {
-               $This.Print("red", "When importing the source and destination are assumed to be known working paths and are not checked.");
-               $This.Print("green", $This.JsonImport);
-               $This.Print("red", "Press Enter to continue")
-                Read-Host;
-            }
-        }
-        function RunScript () {
-            try {
-                $FileNames = $OrganizePhotos.getObjectsFlat();
-                foreach ($file in $FileNames) {
-                    $looper = $OrganizePhotos.CollectObjectInfo($file);
-                    Switch ($This.MoveCopy) {
-                        "move" {
-                            Switch ($This.DateType) {
-                                "creation" {
-                                    $OrganizePhotos.MoveFile($looper.SourcePath, $looper.CreatedTargetPath); 
-                                };
-                                "modified" {
-                                    $OrganizePhotos.MoveFile($looper.SourcePath, $looper.ModifiedTargetPath); 
-                                };
-                                default {
-                                    $This.Print("Red", "While evauluating the Creation/Modified switch within the Move Switch Block, there was an error that resulted in the default Switch being triggered.");
-                                }; 
-                            };
-                        };
-                        "copy" {
-                            Switch ($This.DateType) {
-                                "creation" { 
-                                    $OrganizePhotos.CopyFile($looper.SourcePath, $looper.CreatedTargetPath); 
-                                };
-                                "modified" { 
-                                    $OrganizePhotos.CopyFile($looper.SourcePath, $looper.ModifiedTargetPath); 
-                                };
-                                default {
-                                    $This.Print("Red", "While evauluating the Creation/Modified switch within the Copy Switch Block, there was an error that resulted in the default Switch being triggered.");
-                                }; 
-                            };
-                        };
-                        default {
-                            $This.Print("Red", "While evauluating the Move/Copy Switch there was an error that resulted in the default Switch being triggered.");
-                        };
-                    }
-                }
-            }
-            catch {
-                Write-Host "You caught the catch block";
-                
-                Read-Host;
-            }
-            finally {
-                $This.Print("", "The Script Was RUN. Please check the destination folder")
-                $This.Print("", "press enter to return to the main menu...")
-                Read-Host
-            }
-        }
-
-
+    [void] Main () {
         while ($This.RUN) {
             $This.displayStatus();
             $This.showMenu();
             $command = read-host "Make a Selection: "
             Switch ($command) {
-                1 {
-                    #Source Directory
-                    SetSourceRoot;
-                }; 
-            
-                2 {
-                    SetDestRoot;
-                };
-                
-                3 {
-                    #Select creation date or last modified date
-                    SetSortType;
-                };
-                 
-                4 {
-                    #Select whether to move or copy the files
-                    SelectCopyMove;
-                }; 
-            
-                5 {
-                    #Show dates of files (Recommended before proceeding)
-                    OutputSim;
-                }; 
-            
-                6 {
-                    #Run script
-                    RunScript;
-                } 
-            
-                7 {#outputs CSV
-                    OutputSim;
-                }; 
-            
-                8 {
-                    #Quit
-                    $This.RUN = $false;
-                }; 
-            
+                1 {$This.SetSourceRoot(); };
+                2 {$This.SetDestRoot(); };
+                3 {$This.SelectSortType(); };
+                4 {$This.SelectCopyMove(); };
+                5 {$This.OutputSim(); };
+                6 {$This.RunScript(); }
+                7 {$This.ImportSettings(); };
+                8 {$This.RUN = $false; }; 
                 default {
                     $This.Print("red", "The command you entered is not valid, please check the available commands and try again!");
                     Start-Sleep -Seconds 3;
                 };
-                
-            }          
+            };
         }
-
     }
 
-    [void] SetSourcePath () {
+    [void] SetSourceRoot () {
         $This.Print("", "Enter the full path to the directory from which you would like to copy or move files: ");
         $This.SourceDirectory = Read-Host
-        if ($Script:OrganizePhotos.SetSourcePath($This.SourceDirectory)) {
+        if ($This.OrganizePhotos.SetSourcePath($This.SourceDirectory)) {
             $This.Print("green", "source Folder Set Successfully");
         }
         else {
@@ -457,7 +285,7 @@ class MyInterface {
         }  
     }
 
-    [void] SetSortType () {
+    [void] SelectSortType () {
         $This.Print("", "Enter 1 to organize by creation date and 2 to organize by last modified date.");
         $Selection = Read-Host;
         Switch ($Selection) {
@@ -476,7 +304,7 @@ class MyInterface {
         };
     }
 
-    [void] SetCopyMove() {
+    [void] SelectCopyMove() {
         $This.Print("", "Enter 1 to COPY files and 2 To MOVE files")
         $Selection = Read-Host;
         switch ($Selection) {
@@ -495,7 +323,7 @@ class MyInterface {
         };
     }
 
-    [void] ShowTestResults() {
+    [void] OutputSim() {
         $This.OrganizePhotos.ShowDates();
         $This.Print("", "Please Check Test.csv in the same folder where This script was RUN before proceeding");
         $This.Print("", "Press Enter to the returned to the main Menu");
@@ -503,52 +331,74 @@ class MyInterface {
     }
 
     [void] RunScript() {
-        try {
-            $FileNames = $This.OrganizePhotos.getObjectsFlat();
-            foreach ($file in $FileNames) {
-                $looper = $This.OrganizePhotos.CollectObjectInfo($file);
-                Switch ($This.MoveCopy) {
-                    move {
-                        switch ($This.DateType) {
-                            creation {
-                                $This.OrganizePhotos.MoveFile($looper.SourcePath, $looper.CreatedTargetPath); 
-                            };
-                            modified {
-                                $This.OrganizePhotos.MoveFile($looper.SourcePath, $looper.ModifiedTargetPath); 
-                            };
-                            default {
-                                $This.Print("Red", "While evauluating the Creation/Modified switch within the Move Switch Block, there was an error that resulted in the default Switch being triggered.");
-                            }; 
+        $FileNames = $This.OrganizePhotos.getObjectsFlat();
+        foreach ($file in $FileNames) {
+            $looper = $This.OrganizePhotos.CollectObjectInfo($file);
+            Switch ($This.MoveCopy) {
+                "move" {
+                    #Switch 1 determines if the file will be copied or moved
+                    Switch ($This.DateType) {
+                        "creation" {
+                            #Switch 2 determines if the created or modified date will be used to organize
+                            $This.OrganizePhotos.MoveFile($looper.SourcePath, $looper.CreatedTargetPath); 
                         };
+                        "modified" {
+                            #Switch 2 determines if the created or modified date will be used to organize
+                            $This.OrganizePhotos.MoveFile($looper.SourcePath, $looper.ModifiedTargetPath); 
+                        };
+                        default {
+                            $This.Print("Red", "While evauluating the Creation/Modified switch within the Move Switch Block, there was an error that resulted in the default Switch being triggered.");
+                        }; 
                     };
-                    copy {
-                        creation { 
+                };
+                "copy" {
+                    #Switch 1 determines if the file will be copied or moved
+                    Switch ($This.DateType) {
+                        "creation" {
+                            #Switch 2 determines if the created or modified date will be used to organize
                             $This.OrganizePhotos.CopyFile($looper.SourcePath, $looper.CreatedTargetPath); 
                         };
-                        modified { 
+                        "modified" {
+                            #Switch 2 determines if the created or modified date will be used to organize
                             $This.OrganizePhotos.CopyFile($looper.SourcePath, $looper.ModifiedTargetPath); 
                         };
                         default {
+                            #Switch 2 determines if the created or modified date will be used to organize
                             $This.Print("Red", "While evauluating the Creation/Modified switch within the Copy Switch Block, there was an error that resulted in the default Switch being triggered.");
                         }; 
-    
                     };
-                    default {
-                        $This.Print("Red", "While evauluating the Move/Copy Switch there was an error that resulted in the default Switch being triggered.");
-                    };
-                }
+                };
+                default {
+                    $This.Print("Red", "While evauluating the Move/Copy Switch there was an error that resulted in the default Switch being triggered.");
+                };
             }
-        }
-        catch {
-            
-        }
-        finally {
-            $This.Print("", "The Script Was RUN. Please check the destination folder")
-            $This.Print("", "press enter to return to the main menu...")
-            Read-Host
         }
     }
 
+
+    [void] ImportSettings () {
+        try {
+            $This.JsonImport = Get-Content -Path ./OP-Settings.json -ErrorVariable $This.Jsonerror;
+            $This.JsonImport = $This.JsonImport | ConvertFrom-Json -ErrorVariable $This.Jsonerror;
+            $This.OrganizePhotos.SetSourcePath($This.JsonImport.SourceRoot.ToString());
+            $This.SourceDirectory = $This.JsonImport.SourceRoot.ToString();
+            $This.OrganizePhotos.SetDestinationPath($This.JsonImport.DestRoot.ToString());
+            $This.DestinationRoot = $This.JsonImport.DestRoot.ToString();
+            $This.MoveCopy = $This.JsonImport.CopyMove.ToString();
+            $This.DateType = $This.JsonImport.CreationModified.ToString();
+        }
+        catch {
+            $This.Print("Red", "You caught the catch block");
+            $This.Jsonerror;
+            Read-Host;
+        }
+        finally {
+            $This.Print("red", "When importing the source and destination are assumed to be known working paths and are not checked.");
+            $This.Print("green", $This.JsonImport);
+            $This.Print("red", "Press Enter to continue")
+            Read-Host;
+        }
+    }
 }
 
 [myInterface]$PhotosOrg = [myInterface]::New()
