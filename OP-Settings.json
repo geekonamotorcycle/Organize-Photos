@@ -1,0 +1,6 @@
+{
+    "SourceRoot" : "c:\\test\\",
+    "DestRoot" : "c:\\test\\TestDest",
+    "CopyMove" : "copy",
+    "CreationModified" : "modified"
+}
