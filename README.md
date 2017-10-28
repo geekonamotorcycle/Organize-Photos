@@ -32,7 +32,7 @@
 *   Files in the destination folder will not be overwritten and a nasty error will appear, its ok, usually, you will need to manually review   those files.
 *   I was running windows this morning when I wrote this, I usually run Kubuntu and it should run under powershell in GNULinux and OSX as     long as you organize by modified date (creation date is usually hidden)
 
-#####TODO
+##### TODO
 *   Verify Linux Compatibility
 *   Make one giant happy object?
 *   Logging
