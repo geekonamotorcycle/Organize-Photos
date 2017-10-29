@@ -1,5 +1,5 @@
 # Organize-Photos.ps1 
-# Version 0.7
+# Version 0.7.5
 # Designed for powershell 5.1
 # Copyright 2017 - Joshua Porrata
 # Not for business use without an inexpensive license, contact 
@@ -18,7 +18,7 @@ Class OrganizePhotos {
     [string]$CreatedTargetPath;
     [string]$ModifiedDate;
     [string]$ModifiedTargetPath;
-    [string]$FileHash
+    $FileHash
 
 
     OrganizePhotos() {
@@ -87,17 +87,23 @@ Class OrganizePhotos {
         }
     }
 
-    [hashtable] CollectObjectInfo ([string]$SourcePath) {
+    [hashtable] CollectObjectInfo ([string]$SourcePath, [boolean]$FindHash = $False) {
         $Temp = Get-ChildItem -File -Path $SourcePath -ErrorAction SilentlyContinue;
         $This.FileName = $Temp.Name;
         $This.FileType = $Temp.Extension;
         $This.SourcePath = $Temp.FullName;
         $This.CreatedDate = $Temp.CreationTime.ToString("MM-dd-yyyy");
-        #$This.CreatedDate = $This.CreatedDate.Replace("/", "-");
         $This.CreatedTargetPath = Join-Path -Path $This.DestPath -ChildPath $This.CreatedDate;
         $This.ModifiedDate = $Temp.LastWriteTime.ToString("MM-dd-yyyy");
-        #$This.ModifiedDate = $This.ModifiedDate.Replace("/", "-");
         $This.ModifiedTargetPath = Join-Path -Path $This.DestPath -ChildPath $This.ModifiedDate;
+        Switch ($FindHash) {
+            $True {
+                $This.FileHash = Get-FileHash -Path $This.SourcePath -Algorithm SHA1; 
+                $This.FileHash = $This.FileHash.Hash.ToString()
+            }
+            $False {$This.FileHash = "NotCalculated"}
+            default {$This.FileHash = "NotCalculated"}
+        }
         $This.ObjectHolder = [ordered] @{
             "FileName"           = $This.FileName;
             "FileType"           = $This.FileType;
@@ -106,7 +112,7 @@ Class OrganizePhotos {
             "CreatedTargetPath"  = $This.CreatedTargetPath;
             "ModifiedDate"       = $This.ModifiedDate;
             "ModifiedTargetPath" = $This.ModifiedTargetPath;
-            "FileHash"           = "Default";
+            "FileHash"           = $This.FileHash;
         }
         return $This.ObjectHolder;
     }
@@ -151,16 +157,25 @@ Class OrganizePhotos {
         
     }
     
-    [void] ShowDates() {
+    [void] ExportReport ([boolean]$GetHash) {
         $FileNames = $This.GetObjectsFlat();
         $SimObject = @();
         foreach ($FileName in $FileNames) {
-            $Looper = $This.CollectObjectInfo($FileName);
+            $Looper = "";
+            switch ($GetHash) {
+                $true {$Looper = $This.CollectObjectInfo($FileName, $true); }
+                $false {$Looper = $This.CollectObjectInfo($FileName, $false); }
+                default {$2:Looper = $This.CollectObjectInfo($FileName, $false); }
+            }
             $Row = New-Object PSObject
             $Row | Add-Member -MemberType NoteProperty -Name "FileName" -Value $Looper.FileName;
             $Row | Add-Member -MemberType NoteProperty -Name "FileType" -Value $Looper.FileType;
             $Row | Add-Member -MemberType NoteProperty -Name "CreatedDate" -Value $Looper.CreatedDate;
             $Row | Add-Member -MemberType NoteProperty -Name "ModifiedDate" -Value $Looper.ModifiedDate;
+            $Row | Add-Member -MemberType NoteProperty -Name "SourcePath" -Value $Looper.SourcePath;
+            $Row | Add-Member -MemberType NoteProperty -Name "CreatedPath" -Value $Looper.CreatedTargetPath;
+            $Row | Add-Member -MemberType NoteProperty -Name "ModifiedPath" -Value $Looper.ModifiedTargetPath;
+            $Row | Add-Member -MemberType NoteProperty -Name "FileHash" -Value $Looper.FileHash;
             $SimObject += $Row;
         }
         $Date = [System.DateTime]::Now;
@@ -179,6 +194,8 @@ class MyInterface {
     [OrganizePhotos]$OrganizePhotos;
     $JsonImport;
     $Jsonerror;
+    $GetHash;
+    $Recurse;
 
     MyInterface() {
         [string]$This.SourceDirectory = "Default";
@@ -203,31 +220,33 @@ class MyInterface {
 
     [void] DisplayStatus () {
         Clear-Host
-        $This.Print("green", '*' * 80);
+        $This.Print("Green", '*' * 80);
         if ($This.SourceDirectory.Equals("Default")) {
-            $This.Print("red", "`n" + "You must select a source directory.")
+            $This.Print("Red", "`n" + "You must select a source directory.")
         }
         else {
-            $This.Print("green", "`n" + "The Current source directory is: " + $This.SourceDirectory);
+            $This.Print("Green", "`n" + "The Current source directory is: " + $This.SourceDirectory);
         }
         if ($This.DestinationRoot.Equals("Default")) {
-            $This.Print("red", "You must select a destination directory.")
+            $This.Print("Red", "You must select a destination directory.")
         }
         else {
-            $This.Print("green", "The Current destination directory is: " + $This.DestinationRoot);
+            $This.Print("Green", "The Current destination directory is: " + $This.DestinationRoot);
         }
         if ($This.DateType.Equals("Default")) {
-            $This.Print("red", "You must select an organization parameter(by Creation or Modified date).")
+            $This.Print("Red", "You must select an organization parameter(by Creation or Modified date).")
         }
         else {
-            $This.Print("green", "Files will be organized by: " + $This.DateType);
+            $This.Print("Green", "Files will be organized by: " + $This.DateType);
         }
         if ($This.MoveCopy.Equals("Default")) {
-            $This.Print("red", "You must select whether the files will be moved or copied." + "`n")
+            $This.Print("Red", "You must select whether the files will be moved or copied." + "`n")
         }
         else {
-            $This.Print("green", "Files will be: " + $This.MoveCopy + "`n");
+            $This.Print("Green", "Files will be: " + $This.MoveCopy + "");
         }
+        $This.Print("Green", "Recurse through folder: " + $This.Recurse);
+        $This.Print("Green", "Get File Hash: " + $This.GetHash + "`n");
         $This.Print("green", '*' * 80);
     }
 
@@ -243,7 +262,7 @@ class MyInterface {
         $This.Print("", "5. Show dates of files (Recommended before proceeding)")
         $This.Print("", "6. Run script")
         $This.Print("", "7. Import From ./OP-Settings.JSON")
-        $This.Print("", "8. Quit")
+        $This.Print("", "X. Quit")
         $This.Print("", "*" * 55)
     }
 
@@ -257,10 +276,10 @@ class MyInterface {
                 2 {$This.SetDestRoot(); }
                 3 {$This.SelectSortType(); }
                 4 {$This.SelectCopyMove(); }
-                5 {$This.OutputSim(); }
+                5 {$This.ExportData(); }
                 6 {$This.RunScript(); }
                 7 {$This.ImportSettings(); }
-                8 {$This.RUN = $false; } 
+                "x" {$This.RUN = $false; } 
                 default {
                     $This.Print("red", "The command you entered is not valid, please check the available commands and try again!");
                     Start-Sleep -Seconds 1;
@@ -332,8 +351,8 @@ class MyInterface {
         }
     }
 
-    [void] OutputSim() {
-        $This.OrganizePhotos.ShowDates();
+    [void] ExportData() {
+        $This.OrganizePhotos.ExportReport($This.GetHash);
         $This.Print("", "Please Check Test.csv in the same folder where This script was RUN before proceeding");
         Start-Sleep -Seconds 3
     }
@@ -342,7 +361,7 @@ class MyInterface {
         try {
             $FileNames = $This.OrganizePhotos.getObjectsFlat();
             foreach ($file in $FileNames) {
-                $looper = $This.OrganizePhotos.CollectObjectInfo($file);
+                $looper = $This.OrganizePhotos.CollectObjectInfo($file, $false);
                 Switch ($This.MoveCopy) {
                     "move" {
                         #Switch 1 determines if the file will be copied or moved
@@ -395,16 +414,18 @@ class MyInterface {
     }
 
     [void] InitialImport() {
-        if (Test-Path -Path ./OP-Settings.json) {
-            $This.JsonImport = Get-Content -Path ./OP-Settings.json -ErrorVariable $This.Jsonerror -ErrorAction SilentlyContinue;
-            $This.JsonImport = $This.JsonImport | ConvertFrom-Json -ErrorVariable $This.Jsonerror;
-            $This.OrganizePhotos.SetSourcePath($This.JsonImport.SourceRoot.ToString());
-            $This.SourceDirectory = $This.JsonImport.SourceRoot.ToString();
-            $This.OrganizePhotos.SetDestinationPath($This.JsonImport.DestRoot.ToString());
-            $This.DestinationRoot = $This.JsonImport.DestRoot.ToString();
-            $This.MoveCopy = $This.JsonImport.CopyMove.ToString();
-            $This.DateType = $This.JsonImport.CreationModified.ToString();
-        }  
+            $This.ImportSettings();
+    }
+
+    [void] ShowStatus () {
+        This.Print("", $This.SourceDirectory);
+        This.Print("", $This.DestinationRoot );
+        This.Print("", $This.MoveCopy);
+        This.Print("", $This.DateType);
+        This.Print("", $This.GetHash);
+        This.Print("", $This.Recurse);
+        This.Print("","Press enter to return to the main menu");
+        Read-Host
     }
 
     [void] ImportSettings () {
@@ -418,6 +439,8 @@ class MyInterface {
                 $This.DestinationRoot = $This.JsonImport.DestRoot.ToString();
                 $This.MoveCopy = $This.JsonImport.CopyMove.ToString();
                 $This.DateType = $This.JsonImport.CreationModified.ToString();
+                [bool]$This.GetHash = $This.JsonImport.GetHash;
+                [bool]$This.Recurse = $This.JsonImport.Recurse;
             }
             else {
                 $This.Print("Yellow", "Could not find ./OP-Settings.json");
@@ -429,7 +452,7 @@ class MyInterface {
             Start-Sleep -Seconds 1
         }
         finally {
-            $This.Print("yellow", "When importing the source and destination are assumed to be known working paths and are not checked.");
+            $This.Print("yellow", "When importing the source and destination are assumed to be known working paths and are not checked. Please double Check");
             Start-Sleep -Seconds 3 
         }
     }

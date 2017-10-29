@@ -1,5 +1,5 @@
 # Class - Organize-Photos.ps1 
-# Version 0.7
+# Version  0.7.5
 # Designed for powershell 5.1
 # Copyright 2017 - Joshua Porrata
 # Not for business use without an inexpensive license, contact 
@@ -18,7 +18,7 @@ Class OrganizePhotos {
     [string]$CreatedTargetPath;
     [string]$ModifiedDate;
     [string]$ModifiedTargetPath;
-    [string]$FileHash
+    $FileHash
 
 
     OrganizePhotos() {
@@ -87,17 +87,23 @@ Class OrganizePhotos {
         }
     }
 
-    [hashtable] CollectObjectInfo ([string]$SourcePath) {
+    [hashtable] CollectObjectInfo ([string]$SourcePath, [boolean]$FindHash = $False) {
         $Temp = Get-ChildItem -File -Path $SourcePath -ErrorAction SilentlyContinue;
         $This.FileName = $Temp.Name;
         $This.FileType = $Temp.Extension;
         $This.SourcePath = $Temp.FullName;
         $This.CreatedDate = $Temp.CreationTime.ToString("MM-dd-yyyy");
-        #$This.CreatedDate = $This.CreatedDate.Replace("/", "-");
         $This.CreatedTargetPath = Join-Path -Path $This.DestPath -ChildPath $This.CreatedDate;
         $This.ModifiedDate = $Temp.LastWriteTime.ToString("MM-dd-yyyy");
-        #$This.ModifiedDate = $This.ModifiedDate.Replace("/", "-");
         $This.ModifiedTargetPath = Join-Path -Path $This.DestPath -ChildPath $This.ModifiedDate;
+        Switch ($FindHash) {
+            $True {
+                $This.FileHash = Get-FileHash -Path $This.SourcePath -Algorithm SHA1; 
+                $This.FileHash = $This.FileHash.Hash.ToString()
+            }
+            $False {$This.FileHash = "NotCalculated"}
+            default {$This.FileHash = "NotCalculated"}
+        }
         $This.ObjectHolder = [ordered] @{
             "FileName"           = $This.FileName;
             "FileType"           = $This.FileType;
@@ -106,7 +112,7 @@ Class OrganizePhotos {
             "CreatedTargetPath"  = $This.CreatedTargetPath;
             "ModifiedDate"       = $This.ModifiedDate;
             "ModifiedTargetPath" = $This.ModifiedTargetPath;
-            "FileHash"           = "Default";
+            "FileHash"           = $This.FileHash;
         }
         return $This.ObjectHolder;
     }
@@ -151,16 +157,25 @@ Class OrganizePhotos {
         
     }
     
-    [void] ShowDates() {
+    [void] ExportReport ([boolean]$GetHash) {
         $FileNames = $This.GetObjectsFlat();
         $SimObject = @();
         foreach ($FileName in $FileNames) {
-            $Looper = $This.CollectObjectInfo($FileName);
+            $Looper = "";
+            switch ($GetHash) {
+                $true {$Looper = $This.CollectObjectInfo($FileName, $true); }
+                $false {$Looper = $This.CollectObjectInfo($FileName, $false); }
+                default {$2:Looper = $This.CollectObjectInfo($FileName, $false); }
+            }
             $Row = New-Object PSObject
             $Row | Add-Member -MemberType NoteProperty -Name "FileName" -Value $Looper.FileName;
             $Row | Add-Member -MemberType NoteProperty -Name "FileType" -Value $Looper.FileType;
             $Row | Add-Member -MemberType NoteProperty -Name "CreatedDate" -Value $Looper.CreatedDate;
             $Row | Add-Member -MemberType NoteProperty -Name "ModifiedDate" -Value $Looper.ModifiedDate;
+            $Row | Add-Member -MemberType NoteProperty -Name "SourcePath" -Value $Looper.SourcePath;
+            $Row | Add-Member -MemberType NoteProperty -Name "CreatedPath" -Value $Looper.CreatedTargetPath;
+            $Row | Add-Member -MemberType NoteProperty -Name "ModifiedPath" -Value $Looper.ModifiedTargetPath;
+            $Row | Add-Member -MemberType NoteProperty -Name "FileHash" -Value $Looper.FileHash;
             $SimObject += $Row;
         }
         $Date = [System.DateTime]::Now;
