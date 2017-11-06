@@ -1,5 +1,5 @@
 # Class - MyInterFace.ps1 
-# Version 0.7.5
+# Version 0.8
 # Designed for powershell 5.1
 # Copyright 2017 - Joshua Porrata
 # Not for business use without an inexpensive license, contact 
@@ -181,19 +181,25 @@ class MyInterface {
     [void] RunScript() {
         try {
             $FileNames = $This.OrganizePhotos.getObjectsFlat();
-            foreach ($file in $FileNames) {
-                $looper = $This.OrganizePhotos.CollectObjectInfo($file, $false);
+            foreach ($File in $FileNames) {
+                $Looper = $This.OrganizePhotos.CollectObjectInfo($file, $false);
                 Switch ($This.MoveCopy) {
                     "move" {
                         #Switch 1 determines if the file will be copied or moved
                         Switch ($This.DateType) {
                             "creation" {
                                 #Switch 2 determines if the created or modified date will be used to organize
-                                $This.OrganizePhotos.MoveFile($looper.SourcePath, $looper.CreatedTargetPath); 
+                                switch ($Looper.FileType.Equals(".dng")) {
+                                    $True { $This.OrganizePhotos.MoveFile($Looper.SourcePath, $Looper.RawCreateTargetPath); }
+                                    Default {$This.OrganizePhotos.MoveFile($Looper.SourcePath, $Looper.CreatedTargetPath); }
+                                }
                             }
                             "modified" {
                                 #Switch 2 determines if the created or modified date will be used to organize
-                                $This.OrganizePhotos.MoveFile($looper.SourcePath, $looper.ModifiedTargetPath); 
+                                switch ($Looper.FileType.Equals(".dng")) {
+                                    $True { $This.OrganizePhotos.MoveFile($Looper.SourcePath, $Looper.RawModTargetPath); }
+                                    Default {$This.OrganizePhotos.MoveFile($Looper.SourcePath, $Looper.ModifiedTargetPath); }
+                                }
                             }
                             default {
                                 $This.Print("Red", "While evauluating the Creation/Modified switch within the Move Switch Block, there was an error that resulted in the default Switch being triggered.");
@@ -205,11 +211,17 @@ class MyInterface {
                         Switch ($This.DateType) {
                             "creation" {
                                 #Switch 2 determines if the created or modified date will be used to organize
-                                $This.OrganizePhotos.CopyFile($looper.SourcePath, $looper.CreatedTargetPath); 
+                                switch ($Looper.FileType.Equals(".dng")) {
+                                    $True { $This.OrganizePhotos.MoveFile($Looper.SourcePath, $Looper.RawCreateTargetPath); }
+                                    Default {$This.OrganizePhotos.MoveFile($Looper.SourcePath, $Looper.CreatedTargetPath); }
+                                }
                             }
                             "modified" {
                                 #Switch 2 determines if the created or modified date will be used to organize
-                                $This.OrganizePhotos.CopyFile($looper.SourcePath, $looper.ModifiedTargetPath); 
+                                switch ($Looper.FileType.Equals(".dng")) {
+                                    $True { $This.OrganizePhotos.MoveFile($Looper.SourcePath, $Looper.RawModTargetPath); }
+                                    Default {$This.OrganizePhotos.MoveFile($Looper.SourcePath, $Looper.ModifiedTargetPath); }
+                                }
                             }
                             default {
                                 #Switch 2 determines if the created or modified date will be used to organize
@@ -222,7 +234,7 @@ class MyInterface {
                     }
                 }
             }
-        
+            
         }
         catch {
             $This.Print("red", "An error in the RunScript Method has triggered the catch block. Please Check the Error variables.");
@@ -235,7 +247,7 @@ class MyInterface {
     }
 
     [void] InitialImport() {
-            $This.ImportSettings();
+        $This.ImportSettings();
     }
 
     [void] ShowStatus () {
@@ -245,7 +257,7 @@ class MyInterface {
         This.Print("", $This.DateType);
         This.Print("", $This.GetHash);
         This.Print("", $This.Recurse);
-        This.Print("","Press enter to return to the main menu");
+        This.Print("", "Press enter to return to the main menu");
         Read-Host
     }
 
