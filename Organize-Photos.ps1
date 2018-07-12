@@ -1,3 +1,12 @@
+# Organize-Photos.ps1
+# Version 0.8
+# Designed for powershell 5.1
+# Copyright 2017 - Joshua Porrata
+# Not for business use without an inexpensive license, contact
+# Localbeautytampabay@gmail.com for questions about a lisence
+# there is no warranty, This might destroy everything it touches.
+# it always recurses the origin folder, because im an idiot
+
 Class OrganizePhotos {
     [string]$OriginPath;
     [string]$DestPath;
@@ -12,6 +21,7 @@ Class OrganizePhotos {
     [string]$ModifiedDate;
     [string]$ModifiedTargetPath;
     [string]$RawModTargetPath;
+    $IsRaw;
     $FileHash
 
 
@@ -41,6 +51,7 @@ Class OrganizePhotos {
         $This.ModifiedTargetPath = "Default";
         $This.RawModTargetPath = "Default"
         $This.FileHash = "Default";
+        $This.IsRaw = $False
     }
 
     [Boolean] SetSourcePath ([string]$newSourcePath) {
@@ -87,7 +98,13 @@ Class OrganizePhotos {
 
     [hashtable] CollectObjectInfo ([string]$SourcePath, [boolean]$FindHash = $False) {
         $Temp = Get-ChildItem -File -Path $SourcePath -ErrorAction SilentlyContinue;
-        $RawName = "raw";
+        $RawFolderName = "RAW";
+        if ($Temp.Extension.Contains("DNG") -or $Temp.Extension.Contains("NEF")) {
+            $This.IsRaw = $True
+        }
+        else {
+            $This.IsRaw = $False
+        };
         $This.FileName = $Temp.Name;
         $This.FileType = $Temp.Extension;
         $This.SourcePath = $Temp.FullName;
@@ -95,10 +112,10 @@ Class OrganizePhotos {
         $This.CreatedTargetPath = Join-Path -Path $This.DestPath -ChildPath $This.CreatedDate;
         $This.ModifiedDate = $Temp.LastWriteTime.ToString("MM-dd-yyyy");
         $This.ModifiedTargetPath = Join-Path -Path $This.DestPath -ChildPath $This.ModifiedDate;
-        switch ($This.FileType.Equals(".dng")) {
+        switch ($This.IsRaw) {
             $True {
-                $This.RawModTargetPath = Join-Path -Path $This.ModifiedTargetPath -ChildPath $RawName;
-                $This.RawCreateTargetPath = Join-Path -Path $This.CreatedTargetPath -ChildPath $RawName;
+                $This.RawModTargetPath = Join-Path -Path $This.ModifiedTargetPath -ChildPath $RawFolderName;
+                $This.RawCreateTargetPath = Join-Path -Path $This.CreatedTargetPath -ChildPath $RawFolderName;
             }
             Default {
                 $This.RawModTargetPath = "NotRaw";
@@ -107,7 +124,7 @@ Class OrganizePhotos {
         }
         Switch ($FindHash) {
             $True {
-                $This.FileHash = Get-FileHash -Path $This.SourcePath -Algorithm SHA1; 
+                $This.FileHash = Get-FileHash -Path $This.SourcePath -Algorithm SHA1;
                 $This.FileHash = $This.FileHash.Hash.ToString()
             }
             $False {$This.FileHash = "NotCalculated"}
@@ -124,6 +141,7 @@ Class OrganizePhotos {
             "ModifiedTargetPath"  = $This.ModifiedTargetPath;
             "RawModTargetPath"    = $This.RawModTargetPath;
             "FileHash"            = $This.FileHash;
+            "IsRaw"               = $This.IsRaw;
         }
         return $This.ObjectHolder;
     }
@@ -132,44 +150,38 @@ Class OrganizePhotos {
         [string]$CompleteDest = Join-Path -Path $DestinationDirectory -ChildPath $This.FileName
         if (Test-Path -Path $DestinationDirectory) {
             Copy-Item -Path $SourcePath -Destination $DestinationDirectory
-            
         }
         else {
             New-Item -ItemType Directory -Path $DestinationDirectory
             Copy-Item -Path $SourcePath -Destination $DestinationDirectory
-            
         }
         if (Test-Path -Path $CompleteDest) {
-            $This.ObjectHolder.Add("Success" , $true);    
+            $This.ObjectHolder.Add("Success" , $true);
         }
         else {
             $This.ObjectHolder.Add("Success" , $false);
         }
-        
     }
 
     [void] MoveFile ([string]$SourcePath, [string]$DestinationDirectory) {
         [string]$CompleteDest = Join-Path -Path $DestinationDirectory -ChildPath $This.FileName
         if (Test-Path -Path $DestinationDirectory) {
             Move-Item -Path $SourcePath -Destination $DestinationDirectory
-            
         }
         else {
             New-Item -ItemType Directory -Path $DestinationDirectory
             Move-Item -Path $SourcePath -Destination $DestinationDirectory
-            
         }
         if (Test-Path -Path $CompleteDest) {
-            $This.ObjectHolder.Add("Success" , $true);    
+            $This.ObjectHolder.Add("Success" , $true);
         }
         else {
             $This.ObjectHolder.Add("Success" , $false);
         }
-        
     }
-    
+
     [void] ExportReport ([boolean]$GetHash) {
-        $FileNames = $This.GetObjectsFlat();
+        $FileNames = $This.GetObjectsRecurse(); #OOPS its gonna always recurse now.
         $SimObject = @();
         foreach ($FileName in $FileNames) {
             $Looper = "";
@@ -185,16 +197,17 @@ Class OrganizePhotos {
             $Row | Add-Member -MemberType NoteProperty -Name "CreatedDate" -Value $Looper.CreatedDate;
             $Row | Add-Member -MemberType NoteProperty -Name "CreatedPath" -Value $Looper.CreatedTargetPath;
             $Row | Add-Member -MemberType NoteProperty -Name "RawCreateTargetPath" -Value $Looper.RawCreateTargetPath;
-            $Row | Add-Member -MemberType NoteProperty -Name "ModifiedDate" -Value $Looper.ModifiedDate;            
+            $Row | Add-Member -MemberType NoteProperty -Name "ModifiedDate" -Value $Looper.ModifiedDate;
             $Row | Add-Member -MemberType NoteProperty -Name "ModifiedPath" -Value $Looper.ModifiedTargetPath;
             $Row | Add-Member -MemberType NoteProperty -Name "RawModTargetPath" -Value $Looper.RawModTargetPath;
             $Row | Add-Member -MemberType NoteProperty -Name "FileHash" -Value $Looper.FileHash;
+            $Row | Add-Member -MemberType NoteProperty -Name "IsRaw" -Value $Looper.IsRaw;
             $SimObject += $Row;
         }
         $Date = [System.DateTime]::Now;
         $Date = $Date.ToString("MM-dd-yyyy-HHmm");
         $OutName = ($Date + "-Results.csv" );
-        $SimObject | Export-Csv -Path $OutName -NoTypeInformation -Encoding UTF8 
+        $SimObject | Export-Csv -Path $OutName -NoTypeInformation -Encoding UTF8
     }
 }
 
@@ -228,7 +241,7 @@ class MyInterface {
         }
         else {
             Write-Host $Text -ForegroundColor $color
-        }   
+        }
     }
 
     [void] DisplayStatus () {
@@ -292,7 +305,7 @@ class MyInterface {
                 5 {$This.ExportData(); }
                 6 {$This.RunScript(); }
                 7 {$This.ImportSettings(); }
-                "x" {$This.RUN = $false; } 
+                "x" {$This.RUN = $false; }
                 default {
                     $This.Print("red", "The command you entered is not valid, please check the available commands and try again!");
                     Start-Sleep -Seconds 1;
@@ -325,7 +338,7 @@ class MyInterface {
             $This.Print("red", "The destination folder is invalid");
             Start-Sleep -Seconds 1
             $This.DestinationRoot = "Default";
-        }  
+        }
     }
 
     [void] SelectSortType () {
@@ -354,7 +367,7 @@ class MyInterface {
                 $This.MoveCopy = "copy";
             }
             2 {
-                $This.MoveCopy = "move"; 
+                $This.MoveCopy = "move";
             }
             default {
                 $This.Print("Red", "You entered $Selection which is an invalid Selection");
@@ -372,7 +385,7 @@ class MyInterface {
 
     [void] RunScript() {
         try {
-            $FileNames = $This.OrganizePhotos.getObjectsFlat();
+            $FileNames = $This.OrganizePhotos.getObjectsrecurse(); #oops, this needs to be a switch or if statement, its always true now.
             foreach ($File in $FileNames) {
                 $Looper = $This.OrganizePhotos.CollectObjectInfo($file, $false);
                 Switch ($This.MoveCopy) {
@@ -381,21 +394,21 @@ class MyInterface {
                         Switch ($This.DateType) {
                             "creation" {
                                 #Switch 2 determines if the created or modified date will be used to organize
-                                switch ($Looper.FileType.Equals(".dng")) {
+                                switch ($Looper.IsRaw) {
                                     $True { $This.OrganizePhotos.MoveFile($Looper.SourcePath, $Looper.RawCreateTargetPath); }
                                     Default {$This.OrganizePhotos.MoveFile($Looper.SourcePath, $Looper.CreatedTargetPath); }
                                 }
                             }
                             "modified" {
                                 #Switch 2 determines if the created or modified date will be used to organize
-                                switch ($Looper.FileType.Equals(".dng")) {
+                                switch ($Looper.IsRaw) {
                                     $True { $This.OrganizePhotos.MoveFile($Looper.SourcePath, $Looper.RawModTargetPath); }
                                     Default {$This.OrganizePhotos.MoveFile($Looper.SourcePath, $Looper.ModifiedTargetPath); }
                                 }
                             }
                             default {
                                 $This.Print("Red", "While evauluating the Creation/Modified switch within the Move Switch Block, there was an error that resulted in the default Switch being triggered.");
-                            } 
+                            }
                         }
                     }
                     "copy" {
@@ -403,14 +416,14 @@ class MyInterface {
                         Switch ($This.DateType) {
                             "creation" {
                                 #Switch 2 determines if the created or modified date will be used to organize
-                                switch ($Looper.FileType.Equals(".dng")) {
+                                switch ($Looper.IsRaw) {
                                     $True { $This.OrganizePhotos.MoveFile($Looper.SourcePath, $Looper.RawCreateTargetPath); }
                                     Default {$This.OrganizePhotos.MoveFile($Looper.SourcePath, $Looper.CreatedTargetPath); }
                                 }
                             }
                             "modified" {
                                 #Switch 2 determines if the created or modified date will be used to organize
-                                switch ($Looper.FileType.Equals(".dng")) {
+                                switch ($Looper.IsRaw) {
                                     $True { $This.OrganizePhotos.MoveFile($Looper.SourcePath, $Looper.RawModTargetPath); }
                                     Default {$This.OrganizePhotos.MoveFile($Looper.SourcePath, $Looper.ModifiedTargetPath); }
                                 }
@@ -418,7 +431,7 @@ class MyInterface {
                             default {
                                 #Switch 2 determines if the created or modified date will be used to organize
                                 $This.Print("Red", "While evauluating the Creation/Modified switch within the Copy Switch Block, there was an error that resulted in the default Switch being triggered.");
-                            } 
+                            }
                         }
                     }
                     default {
@@ -426,7 +439,7 @@ class MyInterface {
                     }
                 }
             }
-            
+
         }
         catch {
             $This.Print("red", "An error in the RunScript Method has triggered the catch block. Please Check the Error variables.");
@@ -434,7 +447,7 @@ class MyInterface {
         }
         finally {
             $This.Print("", "The RunScript method has completed.")
-            Start-Sleep -Seconds 1 
+            Start-Sleep -Seconds 1
         }
     }
 
@@ -478,7 +491,7 @@ class MyInterface {
         }
         finally {
             $This.Print("yellow", "When importing the source and destination are assumed to be known working paths and are not checked. Please double Check");
-            Start-Sleep -Seconds 3 
+            Start-Sleep -Seconds 3
         }
     }
 }
